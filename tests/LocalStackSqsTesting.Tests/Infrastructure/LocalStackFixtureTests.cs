@@ -27,7 +27,8 @@ public class LocalStackFixtureTests : IClassFixture<LocalStackFixture>
         Assert.NotNull(_fixture.SqsClient);
         Assert.NotNull(_fixture.LocalStackEndpoint);
         Assert.True(_fixture.IsRunning);
-        Assert.Contains("localhost:4566", _fixture.LocalStackEndpoint);
+        Assert.Contains("localhost:", _fixture.LocalStackEndpoint);
+        Assert.StartsWith("http://localhost:", _fixture.LocalStackEndpoint);
     }
 
     [Fact]

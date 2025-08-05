@@ -14,6 +14,15 @@ public interface ISqsService
     Task<string> CreateQueueAsync(string queueName, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Creates a new SQS queue with the specified name and attributes
+    /// </summary>
+    /// <param name="queueName">The name of the queue to create</param>
+    /// <param name="attributes">Queue attributes to set</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The URL of the created queue</returns>
+    Task<string> CreateQueueAsync(string queueName, Dictionary<string, string> attributes, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Lists all available SQS queues
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>

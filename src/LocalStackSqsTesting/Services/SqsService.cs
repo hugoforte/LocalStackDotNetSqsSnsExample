@@ -21,18 +21,28 @@ public class SqsService : ISqsService
     /// <inheritdoc />
     public async Task<string> CreateQueueAsync(string queueName, CancellationToken cancellationToken = default)
     {
+        return await CreateQueueAsync(queueName, new Dictionary<string, string>(), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<string> CreateQueueAsync(string queueName, Dictionary<string, string> attributes, CancellationToken cancellationToken = default)
+    {
         if (string.IsNullOrWhiteSpace(queueName))
         {
             throw new ArgumentException("Queue name cannot be null or empty", nameof(queueName));
         }
 
-        _logger.LogInformation("Creating SQS queue: {QueueName}", queueName);
+        attributes ??= new Dictionary<string, string>();
+
+        _logger.LogInformation("Creating SQS queue: {QueueName} with {AttributeCount} attributes", 
+            queueName, attributes.Count);
 
         try
         {
             var request = new CreateQueueRequest
             {
-                QueueName = queueName
+                QueueName = queueName,
+                Attributes = attributes
             };
 
             var response = await _sqsClient.CreateQueueAsync(request, cancellationToken);

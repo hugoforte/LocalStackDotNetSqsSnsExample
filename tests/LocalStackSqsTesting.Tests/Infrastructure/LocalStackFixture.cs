@@ -67,7 +67,7 @@ public class LocalStackFixture : ILocalStackFixture
             await DisposeAsync(); // Cleanup on failure
             
             // Check if this is a Docker-related issue
-            if (ex.Message.Contains("Docker") || ex.GetType().Name.Contains("Docker"))
+            if (IsDockerRelatedError(ex))
             {
                 throw new DockerNotAvailableException("Docker is not available or not running. Please ensure Docker Desktop is installed and running.", ex);
             }
@@ -117,7 +117,7 @@ public class LocalStackFixture : ILocalStackFixture
         
         var containerBuilder = new ContainerBuilder()
             .WithImage(_settings.Image)
-            .WithPortBinding(_settings.Port, 4566)
+            .WithPortBinding(4566, true) // Use dynamic port allocation to avoid conflicts
             .WithEnvironment("SERVICES", _settings.GetServicesString())
             .WithEnvironment("DEBUG", "1")
             .WithEnvironment("DATA_DIR", "/tmp/localstack/data")
@@ -142,6 +142,11 @@ public class LocalStackFixture : ILocalStackFixture
         
         _logger.LogInformation("Starting LocalStack container...");
         await _container.StartAsync();
+        
+        // Update the settings with the actual mapped port
+        var mappedPort = _container.GetMappedPublicPort(4566);
+        _settings.Port = mappedPort;
+        _logger.LogInformation("LocalStack container started on port {Port}", mappedPort);
     }
 
     /// <summary>
@@ -211,6 +216,36 @@ public class LocalStackFixture : ILocalStackFixture
         _sqsClient = new AmazonSQSClient("dummy", "dummy", config);
         
         _logger.LogInformation("SQS client configured successfully for LocalStack");
+    }
+
+    /// <summary>
+    /// Determines if an exception is related to Docker availability issues
+    /// </summary>
+    private static bool IsDockerRelatedError(Exception ex)
+    {
+        // Check the exception type and message for Docker-related indicators
+        var exceptionType = ex.GetType().Name;
+        var message = ex.Message;
+        
+        // Common Docker-related exception types
+        if (exceptionType.Contains("Docker", StringComparison.OrdinalIgnoreCase))
+            return true;
+            
+        // Common Docker-related error messages
+        var dockerErrorIndicators = new[]
+        {
+            "docker",
+            "container",
+            "daemon",
+            "docker desktop",
+            "docker engine",
+            "npipe://./pipe/docker_engine",
+            "port is already allocated",
+            "failed to set up container networking"
+        };
+        
+        return dockerErrorIndicators.Any(indicator => 
+            message.Contains(indicator, StringComparison.OrdinalIgnoreCase));
     }
 }
 
